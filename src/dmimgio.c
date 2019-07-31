@@ -19,8 +19,7 @@
 /*                                                                          */
 
 #include "dmimgio.h"
-
-#include <parameter.h>
+#include <parameter.h>   // just INDEFL
 #include <dsnan.h>
 #include <stdlib.h>
 #include <string.h>
