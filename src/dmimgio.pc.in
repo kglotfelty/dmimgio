@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: dmimgio
+Description: CXC image i/o routines
+Version: 4.11
+Requires: ascdm
+Libs: -L${libdir} -ldmimgio 
+Cflags: -I${includedir}

@@ -3,6 +3,7 @@ AM_INIT_AUTOMAKE([foreign -Wall])
 AC_PROG_CC
 AC_PROG_RANLIB
 AM_PROG_CC_C_O
+AM_PROG_AR
 
 # -- Hack to provide missing pkg-config files
 
@@ -26,6 +27,7 @@ PKG_CHECK_MODULES( [CIAO], [
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
+  src/dmimgio.pc
 ])
 
 
