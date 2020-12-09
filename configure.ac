@@ -1,4 +1,4 @@
-AC_INIT([dmimgio], [1.0.0], [glotfeltyk@si.edu])
+AC_INIT([dmimgio], [4.13.0], [glotfeltyk@si.edu])
 AM_INIT_AUTOMAKE([foreign -Wall])
 AC_PROG_CC
 AC_PROG_RANLIB
@@ -6,10 +6,6 @@ AM_PROG_CC_C_O
 AM_PROG_AR
 
 # -- Hack to provide missing pkg-config files
-
-sed s,@prefix@,$prefix,g < lib/pkgconfig/ascdm.pc.in > lib/pkgconfig/ascdm.pc
-sed s,@prefix@,$prefix,g < lib/pkgconfig/readline.pc.in > lib/pkgconfig/readline.pc
-sed s,@prefix@,$prefix,g < lib/pkgconfig/region.pc.in > lib/pkgconfig/region.pc
 
 
 export PKG_CONFIG_PATH=$prefix/lib/pkgconfig:$prefix/ots/lib/pkgconfig:$PKG_CONFIG_PATH
