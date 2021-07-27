@@ -20,9 +20,39 @@
 
 #include <ascdm.h>
 #include <cxcregion.h>
+#include "hdrlib2.h"
+
+
+/* Hold info for an input image */
+typedef struct {
+    void *data;        // pixel values
+    dmDataType dt;     // pixel datatype
+    long *lAxes;       // axis lenghts
+    short *mask;        // mask of valid pixels
+    dmDescriptor *xdesc;  // X (or sky) coordinate descriptor
+    dmDescriptor *ydesc;  // Y coordinate descriptor
+    dmBlock *block; // The block image came from
+    Header_Type *hdr;   // Header keywords
+} Image;
+
+
+typedef union {
+    unsigned char null_byte;
+    short null_short;
+    unsigned short null_ushort;
+    int null_int;
+    long null_long;
+    unsigned long null_ulong;
+    float null_float;
+    double null_double;
+} NullValue;
+
+
+Image *load_image( char *infile );
+
 
 short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt, 
-                       long *lAxes, regRegion *dss, long null, short has_null, 
+                       long *lAxes, regRegion *dss, NullValue null, short has_null, 
                        dmDescriptor *xAxis, dmDescriptor *yAxis );
 
 double get_image_value( void *data, dmDataType dt, 
@@ -30,7 +60,7 @@ double get_image_value( void *data, dmDataType dt,
                         short *mask );
 
 dmDataType get_image_data( dmBlock *inBlock, void **data, long **lAxes,
-                           regRegion **dss, long *nullval, short *nullset );
+                           regRegion **dss, NullValue *nullval, short *nullset );
 
 short  get_image_wcs( dmBlock *imgBlock, dmDescriptor **xAxis, 
                       dmDescriptor **yAxis );
