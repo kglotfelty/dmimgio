@@ -5,7 +5,7 @@ includedir=${prefix}/include
 
 Name: dmimgio
 Description: CXC image i/o routines
-Version: 4.11
+Version: 4.13.5
 Requires: ascdm
 Libs: -L${libdir} -ldmimgio 
 Cflags: -I${includedir}
