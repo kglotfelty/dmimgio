@@ -50,19 +50,16 @@ typedef union {
 
 Image *load_image( char *infile );
 
+double get_image_value( Image *image, long xx, long yy);
 
-short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt, 
-                       long *lAxes, regRegion *dss, NullValue null, short has_null, 
-                       dmDescriptor *xAxis, dmDescriptor *yAxis );
 
-double get_image_value( void *data, dmDataType dt, 
-                        long xx, long yy, long *lAxes, 
-                        short *mask );
+
+short *get_image_mask( Image *image, regRegion *dss, NullValue nullval, short nullset);
 
 dmDataType get_image_data( dmBlock *inBlock, void **data, long **lAxes,
                            regRegion **dss, NullValue *nullval, short *nullset );
 
-short  get_image_wcs( dmBlock *imgBlock, dmDescriptor **xAxis, 
+short get_image_wcs( dmBlock *imgBlock, dmDescriptor **xAxis, 
                       dmDescriptor **yAxis );
 
 

@@ -56,9 +56,7 @@ Image* load_image(char *infile)
         return NULL;
     }
     get_image_wcs(image->block, &(image->xdesc), &(image->ydesc));
-    image->mask = get_image_mask(image->block, image->data,
-                    image->dt, image->lAxes, dss, null_val,
-                    has_null, image->xdesc, image->ydesc);
+    image->mask = get_image_mask(image, dss, null_val, has_null);
 
     if (dss != NULL){
         regFree(dss);
@@ -76,11 +74,11 @@ Image* load_image(char *infile)
 
 
 
-short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt, 
+short *get_image_mask( Image *image, regRegion *dss, NullValue null, short has_null ) /*dmBlock *inBlock, void *data, dmDataType dt, 
                        long *lAxes, regRegion *dss, NullValue null, short has_null, 
-                       dmDescriptor *xAxis, dmDescriptor *yAxis )
+                       dmDescriptor *xAxis, dmDescriptor *yAxis ) */
 {
-  long npix = lAxes[0] * lAxes[1];
+  long npix = image->lAxes[0] * image->lAxes[1];
   short *mask;
   long xx, yy;
   mask = (short*)calloc( npix, sizeof(short));
@@ -90,13 +88,13 @@ short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt,
   xmin = ymin = -DBL_MAX;
   xmax = ymax = DBL_MAX;
   
-  if (xAxis) {
-    if (yAxis) {
-        dmDescriptorGetRange_d( xAxis, &xmin, &xmax);
-        dmDescriptorGetRange_d( yAxis, &ymin, &ymax);        
+  if (image->xdesc) {
+    if (image->ydesc) {
+        dmDescriptorGetRange_d( image->xdesc, &xmin, &xmax);
+        dmDescriptorGetRange_d( image->ydesc, &ymin, &ymax);        
     } else {
-        dmDescriptorGetRange_d( dmGetCpt(xAxis, 1), &xmin, &xmax);
-        dmDescriptorGetRange_d( dmGetCpt(xAxis, 2), &ymin, &ymax);        
+        dmDescriptorGetRange_d( dmGetCpt(image->xdesc, 1), &xmin, &xmax);
+        dmDescriptorGetRange_d( dmGetCpt(image->xdesc, 2), &ymin, &ymax);        
     }
   } 
 
@@ -110,15 +108,15 @@ short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt,
   char yname[100];
 
   
-  if (yAxis) {
-        dmGetName(xAxis, xname, 99);
-        dmGetName(yAxis, yname, 99);
+  if (image->ydesc) {
+        dmGetName(image->xdesc, xname, 99);
+        dmGetName(image->ydesc, yname, 99);
   } else {
-        dmGetName(dmGetCpt(xAxis,1), xname, 99);
-        dmGetName(dmGetCpt(xAxis,2), yname, 99);
+        dmGetName(dmGetCpt(image->xdesc,1), xname, 99);
+        dmGetName(dmGetCpt(image->xdesc,2), yname, 99);
   }
-  x_dss = dmSubspaceColOpen(inBlock,xname );
-  y_dss = dmSubspaceColOpen(inBlock,yname );
+  x_dss = dmSubspaceColOpen(image->block,xname );
+  y_dss = dmSubspaceColOpen(image->block,yname );
   
   if (x_dss) {
       dmSubspaceColGet_d(x_dss, &x_lo, &x_hi, &x_num);
@@ -137,13 +135,13 @@ short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt,
 
 
   
-  for ( xx=lAxes[0]; xx--; ) {
-    for ( yy=lAxes[1]; yy--; ) {
+  for ( xx=image->lAxes[0]; xx--; ) {
+    for ( yy=image->lAxes[1]; yy--; ) {
       double dat;
       long idx;
-      idx = xx + ( yy * lAxes[0] );
+      idx = xx + ( yy * image->lAxes[0] );
       
-      dat = get_image_value( data, dt, xx, yy, lAxes, NULL );
+      dat = get_image_value( image, xx, yy);
       
       /*
        * Now check if there is a NULL value
@@ -154,7 +152,7 @@ short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt,
       }
 
       if (has_null) {
-          switch ( dt ) {
+          switch ( image->dt ) {
               case dmBYTE: {
                 if ( dat == null.null_byte) continue;
                 break;
@@ -199,22 +197,22 @@ short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt,
             
       /* If the image has a data sub space (aka a region filter applied)
          then need to convert coords to physical and check */
-      if (xAxis ) {
+      if (image->xdesc ) {
         double pos[2];
         double loc[2];
         pos[0]=xx+1;
         pos[1]=yy+1;
         
-        if (yAxis) {  /* If no y axis, then xAxis has 2 components */
-          dmCoordCalc_d( xAxis, pos, loc );
-          dmCoordCalc_d( yAxis, pos+1, loc+1 );
+        if (image->ydesc) {  /* If no y axis, then xdesc has 2 components */
+          dmCoordCalc_d( image->xdesc, pos, loc );
+          dmCoordCalc_d( image->ydesc, pos+1, loc+1 );
         } else {
-          dmCoordCalc_d( xAxis, pos, loc );
+          dmCoordCalc_d( image->xdesc, pos, loc );
         }
 
 
         // Check region subspace
-        if ( dss && !regInsideRegion( dss, loc[0], loc[1] ) )
+        if ( dss && !regInsideRegion(dss, loc[0], loc[1] ) )
           continue;
 
 
@@ -239,7 +237,7 @@ short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt,
             continue;
 
 
-       }   // end if xAxis
+       }   // end if xdesc
       
 
       
@@ -252,10 +250,11 @@ short *get_image_mask( dmBlock *inBlock, void *data, dmDataType dt,
 }
 
 
-double get_image_value( void *data, dmDataType dt, 
-                        long xx, long yy, long *lAxes, 
-                        short *mask )
+double get_image_value( Image *image, long xx, long yy)
 {
+
+  long *lAxes = image->lAxes;
+  
 
   long npix = xx + (yy * lAxes[0] );
   double retval;
@@ -270,45 +269,45 @@ double get_image_value( void *data, dmDataType dt,
   }
 
 
-  switch ( dt ) {
+  switch ( image->dt ) {
     
   case dmBYTE: {
-    unsigned char *img = (unsigned char*)data;
+    unsigned char *img = (unsigned char*)image->data;
     retval = img[npix];
     break;
   }
     
   case dmSHORT: {
-    short *img = (short*)data;
+    short *img = (short*)image->data;
     retval = img[npix];
     break;
   }
     
   case dmUSHORT: {
-    unsigned short *img = (unsigned short*)data;
+    unsigned short *img = (unsigned short*)image->data;
     retval = img[npix];
     break;
   }
     
   case dmLONG: {
-    long *img = (long*)data;
+    long *img = (long*)image->data;
     retval = img[npix];
     break;
   }
     
   case dmULONG: {
-    unsigned long *img = (unsigned long*)data;
+    unsigned long *img = (unsigned long*)image->data;
     retval = img[npix];
     break;
   }
     
   case dmFLOAT: {
-    float *img = (float*)data;
+    float *img = (float*)image->data;
     retval = img[npix];
     break;
   }
   case dmDOUBLE: {
-    double *img = (double*)data;
+    double *img = (double*)image->data;
     retval = img[npix];
     break;
   }
@@ -318,8 +317,8 @@ double get_image_value( void *data, dmDataType dt,
   }
 
 
-  if ( mask ) {
-    if ( !mask[npix] ) {
+  if ( image->mask ) {
+    if ( !image->mask[npix] ) {
       ds_MAKE_DNAN( retval );
     }
   }
